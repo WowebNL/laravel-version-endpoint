@@ -76,6 +76,21 @@ class BuildVersionFileCommandTest extends TestCase
     }
 
     #[Test]
+    public function it_applies_the_configured_file_permissions(): void
+    {
+        $path = $this->tempPath();
+        config([
+            'version-endpoint.version_file' => $path,
+            'version-endpoint.file_permissions' => 0640,
+        ]);
+
+        $this->artisan('version-endpoint:build', ['--tag' => 'v1.0.0', '--sha' => 'abc', '--branch' => 'main', '--node' => '20.0.0'])
+            ->assertSuccessful();
+
+        $this->assertSame('0640', substr(sprintf('%o', fileperms($path)), -4));
+    }
+
+    #[Test]
     public function it_omits_the_node_version_when_node_is_unavailable(): void
     {
         // No --node option, and the lookup fails, so the field is left out entirely.

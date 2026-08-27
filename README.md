@@ -167,6 +167,7 @@ Everything lives in `config/version-endpoint.php`:
 | `timestamp_header` | `X-Register-Timestamp` | |
 | `signature_header` | `X-Register-Signature` | |
 | `version_file` | `storage/app/private/version.json` | Where the deploy facts are written and read. |
+| `file_permissions` | `null` | Octal mode to set on the version file after writing it, for example `0640`. `null` leaves it to the umask, which is safer by default: a mode that excludes the web server user would leave the endpoint unable to read its own facts. |
 | `runtimes` | all enabled | Switch the os, database and cache lookups on or off. |
 | `os_release_path` | `/etc/os-release` | Where the distribution id and version are read. |
 

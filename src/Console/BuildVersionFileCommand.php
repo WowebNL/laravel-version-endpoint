@@ -63,6 +63,12 @@ class BuildVersionFileCommand extends Command
         File::ensureDirectoryExists(dirname($path));
         File::put($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
 
+        $permissions = $this->laravel->make('config')->get('version-endpoint.file_permissions');
+
+        if (is_int($permissions)) {
+            @chmod($path, $permissions);
+        }
+
         $this->info("Wrote {$path}");
         $this->line('  '.json_encode($data, JSON_UNESCAPED_SLASHES));
 

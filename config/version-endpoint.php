@@ -82,6 +82,12 @@ return [
 
     'version_file' => env('REGISTER_VERSION_FILE', 'storage/app/private/version.json'),
 
+    // Permissions to set on the version file after writing it, as an octal
+    // integer such as 0640. Null leaves the file to the umask of whatever runs
+    // the deploy, which is the safer default: a mode that excludes the user the
+    // web server runs as would leave the endpoint unable to read its own facts.
+    'file_permissions' => null,
+
     /*
     |--------------------------------------------------------------------------
     | Runtimes
