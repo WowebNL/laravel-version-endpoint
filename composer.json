@@ -1,5 +1,5 @@
 {
-    "name": "wowebnl/laravel-version-endpoint",
+    "name": "woweb/laravel-version-endpoint",
     "description": "A signed, read-only /__version endpoint that reports what a Laravel application is actually running.",
     "keywords": ["laravel", "version", "deployment", "inventory", "ed25519"],
     "license": "MIT",

@@ -19,7 +19,7 @@ PHP 8.2 or newer with `ext-sodium`, and Laravel 11, 12 or 13.
 ## Installation
 
 ```bash
-composer require wowebnl/laravel-version-endpoint
+composer require woweb/laravel-version-endpoint
 ```
 
 The service provider is auto-discovered and registers the route. Publish the config only if you want to change something:
