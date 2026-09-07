@@ -14,7 +14,7 @@ Every failure, including a missing key, answers `404`. Without a valid signature
 
 ## Requirements
 
-PHP 8.2 or newer with `ext-sodium`, and Laravel 11, 12 or 13.
+PHP 8.2 or newer with `ext-sodium`, and Laravel 12 or 13.
 
 ## Installation
 
