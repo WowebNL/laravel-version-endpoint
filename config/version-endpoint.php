@@ -28,8 +28,9 @@ return [
     |--------------------------------------------------------------------------
     |
     | The route is registered outside any middleware group, so it carries no
-    | session or cookie handling. "throttle" is applied first, in Laravel's
-    | "max,minutes" form; set it to null to leave rate limiting to the stack in
+    | session or cookie handling. "throttle" is applied right after the
+    | signature check, in Laravel's "max,minutes" form, so it only counts
+    | signed requests; set it to null to leave rate limiting to the stack in
     | front of the application. Anything in "middleware" runs after it.
     |
     */
@@ -48,8 +49,9 @@ return [
     | public key, which is not a secret, and rejects timestamps that drift beyond
     | "clock_skew" seconds so a captured request cannot be replayed later.
     |
-    | Every failure answers 404, so without a valid signature the endpoint does
-    | not appear to exist at all.
+    | Every failure, and every method other than GET or HEAD, ends in the
+    | router's own 404, so without a valid signature the endpoint does not
+    | appear to exist at all.
     |
     | Read through config() rather than env() so the endpoint keeps working after
     | `php artisan config:cache`, where env() outside config files returns null.

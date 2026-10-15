@@ -14,15 +14,17 @@ class ThrottleTest extends TestCase
     }
 
     #[Test]
-    public function it_rate_limits_before_it_verifies_anything(): void
+    public function it_verifies_before_it_rate_limits(): void
     {
         $this->signingKeypair();
 
-        // Unsigned requests are 404s, but they still consume the allowance, so a
-        // caller cannot probe the endpoint at will.
+        // Unsigned requests stay plain 404s however many arrive, and they leave
+        // the allowance of the signed caller untouched.
+        $this->getJson('/__version')->assertNotFound()->assertHeaderMissing('X-RateLimit-Limit');
         $this->getJson('/__version')->assertNotFound();
         $this->getJson('/__version')->assertNotFound();
-        $this->getJson('/__version')->assertStatus(429);
+
+        $this->getJson('/__version', $this->signedHeaders())->assertOk();
     }
 
     #[Test]

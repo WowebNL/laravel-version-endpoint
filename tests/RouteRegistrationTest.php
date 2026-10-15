@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Woweb\VersionEndpoint\Tests;
 
+use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Route;
 use PHPUnit\Framework\Attributes\Test;
 use Woweb\VersionEndpoint\Http\Middleware\VerifySignedRequest;
@@ -15,6 +16,14 @@ class RouteRegistrationTest extends TestCase
     {
         $this->assertTrue(Route::has('version-endpoint'));
         $this->assertSame('__version', Route::getRoutes()->getByName('version-endpoint')->uri());
+    }
+
+    #[Test]
+    public function it_registers_the_endpoint_for_every_method_the_router_knows(): void
+    {
+        $methods = Route::getRoutes()->getByName('version-endpoint')->methods();
+
+        $this->assertEqualsCanonicalizing(Router::$verbs, $methods);
     }
 
     #[Test]
@@ -36,8 +45,8 @@ class RouteRegistrationTest extends TestCase
         $this->assertContains('throttle:10,1', $middleware);
         $this->assertContains(VerifySignedRequest::class, $middleware);
         $this->assertLessThan(
-            array_search(VerifySignedRequest::class, $middleware, true),
             array_search('throttle:10,1', $middleware, true),
+            array_search(VerifySignedRequest::class, $middleware, true),
         );
     }
 }

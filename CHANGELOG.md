@@ -8,6 +8,27 @@ a patch, a minor and a major release.
 
 ## [Unreleased]
 
+### Fixed
+
+- A request without a valid signature now answers exactly like a path the
+  application does not have. It ends in the router's own not-found exception, so
+  the JSON message, the status and the headers match those of any missing page,
+  instead of an empty message.
+- The route is registered for every method the router knows, and anything other
+  than a signed GET or HEAD answers 404. Before, `OPTIONS` answered 200 with an
+  `Allow` header and other methods answered 405.
+- The signature is verified before the rate limiter runs. Unsigned requests no
+  longer receive rate limit headers or a 429, no longer touch the cache store,
+  and can no longer use up the allowance of a signed caller that shares their
+  client address. Signed requests are still limited by the `throttle` setting.
+  No configuration changes are needed.
+
+### Known limitations
+
+- A request with a method outside the set the router knows still answers 405
+  rather than 404. Closing that needs middleware in front of the router, which
+  the package does not install.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed
