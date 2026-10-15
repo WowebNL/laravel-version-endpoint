@@ -10,10 +10,11 @@ a patch, a minor and a major release.
 
 ### Fixed
 
-- A request without a valid signature now answers exactly like a path the
-  application does not have. It ends in the router's own not-found exception, so
-  the JSON message, the status and the headers match those of any missing page,
-  instead of an empty message.
+- A request without a valid signature now answers like a path the application
+  does not have. It ends in the router's own not-found exception, so the JSON
+  message, the status and the headers match those the exception handler renders
+  for a missing page, instead of an empty message. See the known limitations
+  below for the exceptions.
 - The route is registered for every method the router knows, and anything other
   than a signed GET or HEAD answers 404. Before, `OPTIONS` answered 200 with an
   `Allow` header and other methods answered 405.
@@ -28,6 +29,10 @@ a patch, a minor and a major release.
 - A request with a method outside the set the router knows still answers 405
   rather than 404. Closing that needs middleware in front of the router, which
   the package does not install.
+- In an application with its own fallback route, a missing path is handled by
+  that route, while an unsigned request to the endpoint still gets the exception
+  handler's 404. For every method, the two can then answer differently. The
+  payload stays behind the signature either way.
 
 ## [0.2.0] - 2026-09-07
 

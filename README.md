@@ -10,9 +10,10 @@ The caller signs a short message with an ed25519 private key and sends it in two
 
 That direction matters. The public key sits in the application's environment and is not a secret, so an application that is compromised leaks nothing that lets anyone impersonate the caller or read any other application. The signed message is the request timestamp plus the request path, so a captured request cannot be replayed once its timestamp falls outside the tolerance window, and it cannot be pointed at a different path.
 
-Every failure, including a missing key, answers `404`. Without a valid signature the endpoint is indistinguishable from a path that does not exist: the request ends in the router's own not-found exception, so the status, body and headers are whatever the application renders for any missing page. That holds for every HTTP method the router knows, and unsigned requests are never counted by the rate limiter, so they get no rate limit headers and no `429`.
+Every failure, including a missing key, answers `404`. Without a valid signature the endpoint answers like a path that does not exist: the request ends in the router's own not-found exception, so the status, body and headers are whatever the application's exception handler renders for a missing page. That holds for every HTTP method the router knows, and unsigned requests are never counted by the rate limiter, so they get no rate limit headers and no `429`. Two known limitations apply.
 
-One known limitation: a request with a method outside the set the router knows answers `405` rather than `404`, because Laravel then checks every known method on the path. Closing that needs middleware in front of the router, which this package does not install.
+- A request with a method outside the set the router knows answers `405` rather than `404`, because Laravel then checks every known method on the path. Closing that needs middleware in front of the router, which this package does not install.
+- An application that registers its own fallback route (`Route::fallback`) sends a missing path to that route, while an unsigned request to this endpoint still gets the exception handler's `404`. For every method, the endpoint can then answer differently from a missing path. The payload stays behind the signature either way.
 
 ## Requirements
 

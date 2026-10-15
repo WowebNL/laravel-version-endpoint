@@ -31,6 +31,8 @@ A few security properties are intentional and documented in the README:
 2. Because the signed message binds a request to both a moment and a path, a captured request
    cannot be reused outside the tolerance window or aimed at a different route.
 3. Every failure, including a missing key, answers 404. An unauthenticated caller cannot tell
-   the endpoint apart from a route that does not exist.
+   the endpoint apart from a route that does not exist, within the known limitations listed
+   in the README: a request method outside the set the router knows, and an application
+   that registers its own fallback route.
 
 If you find a way around any of these, that qualifies as a vulnerability worth reporting.
