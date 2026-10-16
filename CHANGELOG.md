@@ -8,6 +8,8 @@ a patch, a minor and a major release.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-16
+
 ### Fixed
 
 - A request without a valid signature now answers like a path the application
