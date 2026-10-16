@@ -52,7 +52,11 @@ class VersionEndpointServiceProvider extends ServiceProvider
             return;
         }
 
-        $route = Route::middleware($this->middleware($config))->get($path, VersionController::class);
+        // Registered for every method the router knows, so no method can tell the
+        // path apart from one that does not exist by answering 405, or 200 with an
+        // Allow header on OPTIONS. The middleware turns everything but a signed
+        // GET or HEAD into the router's own 404.
+        $route = Route::middleware($this->middleware($config))->any($path, VersionController::class);
 
         $name = (string) $config->get('version-endpoint.route_name');
 
@@ -62,22 +66,26 @@ class VersionEndpointServiceProvider extends ServiceProvider
     }
 
     /**
-     * Throttle first, then the signature check, then anything the application
-     * added of its own.
+     * The signature check first, then the throttle, then anything the
+     * application added of its own.
+     *
+     * Verifying first keeps unsigned traffic out of the rate limiter entirely:
+     * it never touches the cache store, never receives rate limit headers or a
+     * 429, and cannot use up the allowance of the caller that does sign. The
+     * check itself does no I/O, so it is cheaper than the limiter it now
+     * precedes.
      *
      * @return list<string>
      */
     protected function middleware(Repository $config): array
     {
-        $middleware = [];
+        $middleware = [VerifySignedRequest::class];
 
         $throttle = $config->get('version-endpoint.throttle');
 
         if (is_string($throttle) && trim($throttle) !== '') {
             $middleware[] = 'throttle:'.trim($throttle);
         }
-
-        $middleware[] = VerifySignedRequest::class;
 
         foreach ((array) $config->get('version-endpoint.middleware', []) as $extra) {
             if (is_string($extra) && $extra !== '') {
