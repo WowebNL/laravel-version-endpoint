@@ -49,6 +49,13 @@ return [
     | public key, which is not a secret, and rejects timestamps that drift beyond
     | "clock_skew" seconds so a captured request cannot be replayed later.
     |
+    | "verify_key" takes one public key or several, separated by commas, so that
+    | every caller can sign with its own keypair and one can be rotated or
+    | revoked on its own. A request passes when any listed key verifies it.
+    | Empty entries are ignored, and an entry that is not a valid public key is
+    | skipped without affecting the others. A published config file may also
+    | set it to an array of keys.
+    |
     | Every failure, and every method other than GET or HEAD, ends in the
     | router's own 404, so without a valid signature the endpoint does not
     | appear to exist at all.

@@ -15,10 +15,11 @@ use Woweb\VersionEndpoint\Support\SignedRequest;
  * Verifies the ed25519 signature the caller put on the request.
  *
  * The caller signs "timestamp\npath" with its private key; this verifies it with
- * the configured public key, which is not a secret. Only a GET or HEAD request
- * can pass. Every failure ends in the router's own not-found exception rather
- * than a 401, 403 or 405, so an unauthenticated caller cannot tell the endpoint
- * apart from a path that does not exist.
+ * the configured public keys, which are not secret, and accepts a signature from
+ * any one of them. Only a GET or HEAD request can pass. Every failure ends in
+ * the router's own not-found exception rather than a 401, 403 or 405, so an
+ * unauthenticated caller cannot tell the endpoint apart from a path that does
+ * not exist.
  */
 class VerifySignedRequest
 {
@@ -30,8 +31,10 @@ class VerifySignedRequest
             $this->notFound($request);
         }
 
+        $configuredKeys = $this->config->get('version-endpoint.verify_key');
+
         $verifier = new SignedRequest(
-            publicKey: (string) $this->config->get('version-endpoint.verify_key'),
+            publicKey: is_array($configuredKeys) || is_string($configuredKeys) ? $configuredKeys : null,
             clockSkew: (int) $this->config->get('version-endpoint.clock_skew'),
         );
 

@@ -89,6 +89,97 @@ class SignedRequestTest extends TestCase
         }
     }
 
+    #[Test]
+    public function it_accepts_a_signature_from_any_key_in_a_comma_separated_list(): void
+    {
+        [$firstPublic, $firstSecret] = $this->keypair();
+        [$secondPublic, $secondSecret] = $this->keypair();
+        $timestamp = (string) time();
+
+        $verifier = new SignedRequest($firstPublic.','.$secondPublic, 60);
+
+        $this->assertTrue($verifier->verify($timestamp, $this->sign($firstSecret, $timestamp, '/__version'), '/__version'));
+        $this->assertTrue($verifier->verify($timestamp, $this->sign($secondSecret, $timestamp, '/__version'), '/__version'));
+    }
+
+    #[Test]
+    public function it_rejects_a_signature_from_a_key_that_is_not_in_the_list(): void
+    {
+        [$firstPublic] = $this->keypair();
+        [$secondPublic] = $this->keypair();
+        [, $otherSecret] = $this->keypair();
+        $timestamp = (string) time();
+
+        $verifier = new SignedRequest($firstPublic.','.$secondPublic, 60);
+
+        $this->assertFalse($verifier->verify($timestamp, $this->sign($otherSecret, $timestamp, '/__version'), '/__version'));
+    }
+
+    #[Test]
+    public function it_ignores_whitespace_and_empty_entries_in_the_list(): void
+    {
+        [$firstPublic, $firstSecret] = $this->keypair();
+        [$secondPublic, $secondSecret] = $this->keypair();
+        $timestamp = (string) time();
+
+        $verifier = new SignedRequest(' , '.$firstPublic.' ,, '.$secondPublic.' , ', 60);
+
+        $this->assertTrue($verifier->verify($timestamp, $this->sign($firstSecret, $timestamp, '/__version'), '/__version'));
+        $this->assertTrue($verifier->verify($timestamp, $this->sign($secondSecret, $timestamp, '/__version'), '/__version'));
+    }
+
+    #[Test]
+    public function it_accepts_the_keys_as_an_array(): void
+    {
+        [$firstPublic, $firstSecret] = $this->keypair();
+        [$secondPublic, $secondSecret] = $this->keypair();
+        $timestamp = (string) time();
+
+        $verifier = new SignedRequest([$firstPublic, $secondPublic], 60);
+
+        $this->assertTrue($verifier->verify($timestamp, $this->sign($firstSecret, $timestamp, '/__version'), '/__version'));
+        $this->assertTrue($verifier->verify($timestamp, $this->sign($secondSecret, $timestamp, '/__version'), '/__version'));
+    }
+
+    #[Test]
+    public function a_malformed_key_in_the_list_does_not_lock_out_the_others(): void
+    {
+        [$public, $secret] = $this->keypair();
+        $timestamp = (string) time();
+
+        foreach (['!!!', base64_encode('far too short')] as $malformed) {
+            foreach ([$malformed.','.$public, $public.','.$malformed] as $configured) {
+                $this->assertTrue(
+                    (new SignedRequest($configured, 60))->verify($timestamp, $this->sign($secret, $timestamp, '/__version'), '/__version'),
+                    "expected a match for: {$configured}",
+                );
+            }
+        }
+    }
+
+    #[Test]
+    public function a_list_without_a_usable_key_rejects_every_request(): void
+    {
+        [, $secret] = $this->keypair();
+        $timestamp = (string) time();
+        $signature = $this->sign($secret, $timestamp, '/__version');
+
+        foreach ([',', ' , , ', '!!!,'.base64_encode('far too short'), [], [''], null] as $configured) {
+            $this->assertFalse((new SignedRequest($configured, 60))->verify($timestamp, $signature, '/__version'));
+        }
+    }
+
+    #[Test]
+    public function the_key_list_is_split_on_commas_and_trimmed(): void
+    {
+        $this->assertSame([], SignedRequest::keys(null));
+        $this->assertSame([], SignedRequest::keys(''));
+        $this->assertSame([], SignedRequest::keys(' , ,'));
+        $this->assertSame(['a'], SignedRequest::keys('a'));
+        $this->assertSame(['a', 'b'], SignedRequest::keys(' a ,, b ,'));
+        $this->assertSame(['a', 'b', 'c'], SignedRequest::keys(['a', ' b,c ', '', 42]));
+    }
+
     /** @return array{0: string, 1: string} base64 public key, raw secret key */
     private function keypair(): array
     {

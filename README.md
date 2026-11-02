@@ -2,7 +2,7 @@
 
 A signed, read-only `/__version` endpoint that reports what a Laravel application is actually running: the PHP version, the framework version, the deployed git tag and commit, the hash of the deployed `composer.lock`, and the versions of the runtimes around it.
 
-It exists for inventory tooling. Something has to answer the question "which version of this application is live, and is anything underneath it out of support" without a person logging in to look. This package answers that question over HTTP, to one caller, and to nobody else.
+It exists for inventory tooling. Something has to answer the question "which version of this application is live, and is anything underneath it out of support" without a person logging in to look. This package answers that question over HTTP, to the callers you trust, and to nobody else.
 
 ## How it is protected
 
@@ -44,11 +44,21 @@ echo 'public:  '.base64_encode(sodium_crypto_sign_publickey($pair)).PHP_EOL;
 
 Keep the private key on the caller. One keypair can serve every application, or you can issue one per application; the package does not care which you choose.
 
+When more than one system probes the endpoint, give each of them its own keypair. Each caller then keeps its own private key, and you can rotate or revoke one without touching the others.
+
 ### 2. Configure the application
 
 ```dotenv
 REGISTER_VERIFY_KEY=<the base64 public key>
 ```
+
+To trust several callers, list their public keys separated by commas. A request passes when its signature verifies against any of them:
+
+```dotenv
+REGISTER_VERIFY_KEY=<public key of caller A>,<public key of caller B>
+```
+
+Spaces around the commas and empty entries are ignored. An entry that is not a valid ed25519 public key is skipped, and the other keys keep working. To revoke a caller, remove its key from the list. A single key, as above, works exactly as before.
 
 Optional:
 
@@ -165,7 +175,7 @@ Everything lives in `config/version-endpoint.php`:
 | `route_name` | `version-endpoint` | The route name, for `route()` and tests. |
 | `throttle` | `10,1` | Laravel's `max,minutes` form, applied after verification, so only signed requests count. `null` leaves rate limiting to whatever sits in front. |
 | `middleware` | `[]` | Extra middleware, applied after verification. |
-| `verify_key` | `null` | The base64 ed25519 public key. Without it the endpoint answers 404. |
+| `verify_key` | `null` | The base64 ed25519 public key, or several separated by commas (an array of keys also works in a published config). A request passes when any of them verifies it. Without a usable key the endpoint answers 404. |
 | `clock_skew` | `60` | Seconds of tolerance on the request timestamp. |
 | `timestamp_header` | `X-Register-Timestamp` | |
 | `signature_header` | `X-Register-Signature` | |

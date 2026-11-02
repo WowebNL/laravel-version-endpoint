@@ -26,7 +26,7 @@ and a coordinated disclosure timeline will be agreed with you.
 A few security properties are intentional and documented in the README:
 
 1. Requests are authenticated with an ed25519 signature over the request timestamp and the
-   request path. Only the public key is stored in the application, so a compromised
+   request path. Only public keys are stored in the application, so a compromised
    application cannot be used to impersonate the caller or to reach another application.
 2. Because the signed message binds a request to both a moment and a path, a captured request
    cannot be reused outside the tolerance window or aimed at a different route.
