@@ -36,7 +36,12 @@ class MultipleVerifyKeysTest extends TestCase
     public function removing_a_key_from_the_list_revokes_only_that_caller(): void
     {
         [$keptPublic, $keptSecret] = $this->keypair();
-        [, $revokedSecret] = $this->keypair();
+        [$revokedPublic, $revokedSecret] = $this->keypair();
+
+        config(['version-endpoint.verify_key' => $keptPublic.','.$revokedPublic]);
+
+        $this->getJson('/__version', $this->signedHeaders($keptSecret))->assertOk();
+        $this->getJson('/__version', $this->signedHeaders($revokedSecret))->assertOk();
 
         config(['version-endpoint.verify_key' => $keptPublic]);
 
