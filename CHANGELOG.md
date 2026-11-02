@@ -13,16 +13,18 @@ a patch, a minor and a major release.
 - `REGISTER_VERIFY_KEY` accepts several public keys separated by commas, so
   every caller can sign with its own keypair and be rotated or revoked on its
   own. A request passes when its signature verifies against any listed key.
-  Spaces and empty entries are ignored, and an entry that is not a valid public
-  key is skipped without affecting the others. A published config file may also
-  set `verify_key` to an array of keys. The signature is checked against every
-  usable key, so the response time does not depend on which key signed it.
+  Empty entries and whitespace inside a quoted value are ignored, and an entry
+  that is not a valid public key is skipped without affecting the others. A
+  published config file may also set `verify_key` to an array of keys. The
+  signature is checked against every usable key, without stopping at the first
+  match.
 
 ### Upgrading
 
 - No changes are needed. A single key keeps working exactly as before. To add a
   caller, append its public key to `REGISTER_VERIFY_KEY` after a comma, and run
   `php artisan config:cache` again where the configuration is cached.
+- Write the list without spaces, or quote it, in a `.env` file.
 - `SignedRequest` now also takes a comma-separated string or an array as its
   first argument, and gains a static `keys()` helper that returns the parsed
   list.

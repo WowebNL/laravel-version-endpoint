@@ -87,8 +87,7 @@ final class SignedRequest
      * A configured key that does not decode to an ed25519 public key is skipped,
      * so one malformed entry does not lock out the callers holding the others.
      * The signature is checked against every usable key, without stopping at the
-     * first match, so the time a request takes does not depend on which key
-     * signed it.
+     * first match.
      */
     public function verify(?string $timestamp, ?string $signature, string $path): bool
     {

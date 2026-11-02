@@ -58,7 +58,7 @@ To trust several callers, list their public keys separated by commas. A request 
 REGISTER_VERIFY_KEY=<public key of caller A>,<public key of caller B>
 ```
 
-Spaces around the commas and empty entries are ignored. An entry that is not a valid ed25519 public key is skipped, and the other keys keep working. To revoke a caller, remove its key from the list. A single key, as above, works exactly as before.
+In a `.env` file, write the list without spaces, or wrap the whole value in double quotes: an unquoted value that contains a space is rejected by the dotenv parser and the application will not boot. Empty entries are ignored, and so is whitespace inside a quoted value. An entry that is not a valid ed25519 public key is skipped, and the other keys keep working. To revoke a caller, remove its key from the list. A single key, as above, works exactly as before.
 
 Optional:
 
