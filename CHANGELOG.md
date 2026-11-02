@@ -6,7 +6,7 @@ All notable changes to this package are documented here. The format follows
 part of the public contract: see "The contract" in the README for what counts as
 a patch, a minor and a major release.
 
-## [Unreleased]
+## [0.3.0] - 2026-11-02
 
 ### Added
 
