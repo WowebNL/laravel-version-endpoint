@@ -218,6 +218,19 @@ class VersionEndpointTest extends TestCase
             ->assertJsonPath('runtimes.mysql', '8.0.43');
     }
 
+    #[Test]
+    public function it_keeps_a_mysql_version_that_only_looks_like_the_compatibility_prefix(): void
+    {
+        $this->signingKeypair();
+        $this->withoutOsRelease();
+        $this->unreachableCache();
+        $this->fakeMysqlFamily('mysql', '5.5.5-log');
+
+        $this->getJson('/__version', $this->signedHeaders())
+            ->assertOk()
+            ->assertJsonPath('runtimes.mysql', '5.5.5');
+    }
+
     /** @return array<string, array{string, string, string}> */
     public static function mariadbVersions(): array
     {
