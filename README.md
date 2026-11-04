@@ -165,7 +165,7 @@ Consumers should read the package version from the application's `composer.lock`
 - It does not report host names, credentials, configuration values, schema or extension lists. Only version metadata.
 - It does not run `git` or any other subprocess while serving a request.
 - It does not sign the response. The caller authenticates itself to the application, not the other way around; a caller that needs the channel authenticated should use TLS, which it needs anyway.
-- It does not detect MySQL or MariaDB. Their version strings do not map onto one support cycle without guessing, and a wrong end of life verdict is worse than a missing one.
+- It does not guess at a database engine. PostgreSQL, MySQL and MariaDB are reported from the server's own version string, and any other driver is left out: a wrong end of life verdict is worse than a missing one.
 
 ## Configuration reference
 
