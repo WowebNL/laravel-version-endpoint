@@ -7,6 +7,7 @@ namespace Woweb\VersionEndpoint\Tests;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Mockery;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
 
@@ -190,6 +191,144 @@ class VersionEndpointTest extends TestCase
     }
 
     #[Test]
+    public function it_reports_the_mysql_version_without_its_packaging_suffix(): void
+    {
+        $this->signingKeypair();
+        $this->withoutOsRelease();
+        $this->unreachableCache();
+        $this->fakeMysqlFamily('mysql', '8.4.6-0ubuntu0.24.04.1');
+
+        $this->getJson('/__version', $this->signedHeaders())
+            ->assertOk()
+            ->assertJsonPath('runtimes.mysql', '8.4.6')
+            ->assertJsonMissingPath('runtimes.mariadb')
+            ->assertJsonMissingPath('runtimes.postgresql');
+    }
+
+    #[Test]
+    public function it_reports_a_plain_mysql_version(): void
+    {
+        $this->signingKeypair();
+        $this->withoutOsRelease();
+        $this->unreachableCache();
+        $this->fakeMysqlFamily('mysql', '8.0.43');
+
+        $this->getJson('/__version', $this->signedHeaders())
+            ->assertOk()
+            ->assertJsonPath('runtimes.mysql', '8.0.43');
+    }
+
+    #[Test]
+    public function it_keeps_a_mysql_version_that_only_looks_like_the_compatibility_prefix(): void
+    {
+        $this->signingKeypair();
+        $this->withoutOsRelease();
+        $this->unreachableCache();
+        $this->fakeMysqlFamily('mysql', '5.5.5-log');
+
+        $this->getJson('/__version', $this->signedHeaders())
+            ->assertOk()
+            ->assertJsonPath('runtimes.mysql', '5.5.5');
+    }
+
+    /** @return array<string, array{string, string, string}> */
+    public static function mariadbVersions(): array
+    {
+        return [
+            '10.x with distro suffix' => ['mysql', '10.11.14-MariaDB-ubu2404', '10.11.14'],
+            '10.x with compatibility prefix' => ['mysql', '5.5.5-10.11.14-MariaDB-ubu2404', '10.11.14'],
+            '10.x plain' => ['mysql', '10.6.23-MariaDB', '10.6.23'],
+            '11.x with distro suffix' => ['mysql', '11.4.8-MariaDB-deb12', '11.4.8'],
+            '11.x with compatibility prefix' => ['mysql', '5.5.5-11.8.3-MariaDB-ubu2404', '11.8.3'],
+            '11.x with log suffix' => ['mysql', '11.4.8-MariaDB-log', '11.4.8'],
+            'lower case marker' => ['mysql', '10.11.14-mariadb', '10.11.14'],
+            'mariadb driver name' => ['mariadb', '11.4.8-MariaDB-ubu2404', '11.4.8'],
+            'mariadb driver name with prefix' => ['mariadb', '5.5.5-10.11.14-MariaDB-1:10.11.14+maria~ubu2404', '10.11.14'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('mariadbVersions')]
+    public function it_reports_mariadb_on_its_own_slug(string $driver, string $serverVersion, string $expected): void
+    {
+        $this->signingKeypair();
+        $this->withoutOsRelease();
+        $this->unreachableCache();
+        $this->fakeMysqlFamily($driver, $serverVersion);
+
+        $this->getJson('/__version', $this->signedHeaders())
+            ->assertOk()
+            ->assertJsonPath('runtimes.mariadb', $expected)
+            ->assertJsonMissingPath('runtimes.mysql');
+    }
+
+    #[Test]
+    public function it_reports_no_mysql_family_engine_when_the_version_is_unparsable(): void
+    {
+        $this->signingKeypair();
+        $this->withoutOsRelease();
+        $this->unreachableCache();
+        $this->fakeMysqlFamily('mysql', 'unknown');
+
+        $this->getJson('/__version', $this->signedHeaders())
+            ->assertOk()
+            ->assertJsonMissingPath('runtimes.mysql')
+            ->assertJsonMissingPath('runtimes.mariadb');
+    }
+
+    #[Test]
+    public function it_reports_no_mysql_family_engine_when_the_version_query_fails(): void
+    {
+        $this->signingKeypair();
+        $this->withoutOsRelease();
+        $this->unreachableCache();
+
+        $connection = Mockery::mock();
+        $connection->shouldReceive('getDriverName')->andReturn('mariadb');
+        $connection->shouldReceive('selectOne')->andThrow(new RuntimeException('query failed'));
+        DB::shouldReceive('connection')->andReturn($connection);
+
+        $this->getJson('/__version', $this->signedHeaders())
+            ->assertOk()
+            ->assertJsonMissingPath('runtimes.mysql')
+            ->assertJsonMissingPath('runtimes.mariadb');
+    }
+
+    #[Test]
+    public function it_does_not_query_the_database_on_an_unknown_driver(): void
+    {
+        $this->signingKeypair();
+        $this->withoutOsRelease();
+        $this->unreachableCache();
+
+        $connection = Mockery::mock();
+        $connection->shouldReceive('getDriverName')->andReturn('sqlsrv');
+        $connection->shouldNotReceive('selectOne');
+        DB::shouldReceive('connection')->andReturn($connection);
+
+        $this->getJson('/__version', $this->signedHeaders())
+            ->assertOk()
+            ->assertJsonMissingPath('runtimes.mysql')
+            ->assertJsonMissingPath('runtimes.mariadb')
+            ->assertJsonMissingPath('runtimes.postgresql');
+    }
+
+    #[Test]
+    public function it_still_reports_postgresql_through_its_own_statement(): void
+    {
+        $this->signingKeypair();
+        $this->withoutOsRelease();
+        $this->unreachableCache();
+        $this->fakePostgres('16.10');
+
+        $this->getJson('/__version', $this->signedHeaders())
+            ->assertOk()
+            ->assertJsonPath('runtimes.postgresql', '16.10')
+            ->assertJsonMissingPath('runtimes.mysql')
+            ->assertJsonMissingPath('runtimes.mariadb');
+    }
+
+    #[Test]
     public function it_answers_without_engine_runtimes_when_no_engine_is_reachable(): void
     {
         $this->signingKeypair();
@@ -305,6 +444,17 @@ class VersionEndpointTest extends TestCase
         $connection->shouldReceive('getDriverName')->andReturn('pgsql');
         $connection->shouldReceive('selectOne')->with('SHOW server_version')
             ->andReturn((object) ['server_version' => $serverVersion]);
+
+        DB::shouldReceive('connection')->andReturn($connection);
+    }
+
+    /** Let a MySQL or MariaDB connection answer the version query like a real server. */
+    private function fakeMysqlFamily(string $driver, string $serverVersion): void
+    {
+        $connection = Mockery::mock();
+        $connection->shouldReceive('getDriverName')->andReturn($driver);
+        $connection->shouldReceive('selectOne')->with('SELECT VERSION() AS version')
+            ->andReturn((object) ['version' => $serverVersion]);
 
         DB::shouldReceive('connection')->andReturn($connection);
     }

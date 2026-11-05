@@ -109,9 +109,9 @@ return [
     | out of the payload instead of failing the response.
     |
     | "os" reads the distribution id and version from an os-release file.
-    | "database" reports the PostgreSQL server version of the default connection,
-    | and does nothing on any other driver. "cache" reports the Redis or Valkey
-    | server version of the default Redis connection.
+    | "database" reports the PostgreSQL, MySQL or MariaDB server version of the
+    | default connection, and does nothing on any other driver. "cache" reports
+    | the Redis or Valkey server version of the default Redis connection.
     |
     */
 

@@ -141,9 +141,12 @@ The path in the signed message is the path the application sees. A proxy that re
 - `nodejs`, from the deploy;
 - the distribution id and version from the os-release file, for example `debian` or `alpine`;
 - `postgresql`, when the default database connection runs on PostgreSQL;
+- `mysql` or `mariadb`, when the default database connection uses the `mysql` or `mariadb` driver;
 - `redis` or `valkey`, from the default Redis connection.
 
 Valkey reports a `redis_version` as well, but that is a protocol compatibility number: reporting it as Redis would produce a wrong end of life verdict, so the Valkey version wins and decides the slug.
+
+MySQL and MariaDB are asked with `SELECT VERSION()`. A `mysql` connection can just as well point at a MariaDB server, so the driver name does not decide the slug: a version string that names MariaDB is reported as `mariadb`, anything else as `mysql`. The `5.5.5-` compatibility prefix that MariaDB can put in front of its version is dropped, and only the bare version number is kept, so `5.5.5-10.11.14-MariaDB-ubu2404` becomes `"mariadb": "10.11.14"`.
 
 Every runtime lookup runs only after the signature has been verified, reads no application data, and is wrapped on its own. An engine that is down, absent or not configured drops out of the payload rather than failing the response: a 500 would hide the whole version picture behind a single outage. Switch individual lookups off in the config if you would rather not have them at all.
 
@@ -162,7 +165,7 @@ Consumers should read the package version from the application's `composer.lock`
 - It does not report host names, credentials, configuration values, schema or extension lists. Only version metadata.
 - It does not run `git` or any other subprocess while serving a request.
 - It does not sign the response. The caller authenticates itself to the application, not the other way around; a caller that needs the channel authenticated should use TLS, which it needs anyway.
-- It does not detect MySQL or MariaDB. Their version strings do not map onto one support cycle without guessing, and a wrong end of life verdict is worse than a missing one.
+- It does not guess at a database engine. PostgreSQL, MySQL and MariaDB are reported from the server's own version string, and any other driver is left out: a wrong end of life verdict is worse than a missing one.
 
 ## Configuration reference
 
