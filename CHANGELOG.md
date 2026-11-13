@@ -6,6 +6,19 @@ All notable changes to this package are documented here. The format follows
 part of the public contract: see "The contract" in the README for what counts as
 a patch, a minor and a major release.
 
+## [Unreleased]
+
+### Added
+
+- `runtimes` reports `mysql` or `mariadb` when the default database connection
+  uses the `mysql` or `mariadb` driver, so consumers that check end-of-life
+  status can cover those engines as well. The version is read with
+  `SELECT VERSION()`, which touches no table. The slug follows the server's own
+  version string rather than the driver name, because a `mysql` connection can
+  point at a MariaDB server. A leading `5.5.5-` compatibility prefix is dropped
+  and only the bare version number is kept. A failing query or an unparsable
+  version leaves the key out, as with the other engines.
+
 ## [0.3.0] - 2026-11-02
 
 ### Added

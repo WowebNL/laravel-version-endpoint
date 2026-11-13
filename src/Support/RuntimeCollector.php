@@ -86,11 +86,17 @@ final class RuntimeCollector
     }
 
     /**
-     * The PostgreSQL server version of the default connection.
+     * The PostgreSQL, MySQL or MariaDB server version of the default connection.
      *
-     * Only PostgreSQL is reported: it is asked through a configuration statement
-     * that touches no table, and its version maps cleanly onto a single support
-     * cycle. Any other driver is left out rather than guessed at.
+     * Each engine is asked through a statement that touches no table, and each
+     * version maps cleanly onto a single support cycle. Any other driver is left
+     * out rather than guessed at.
+     *
+     * MySQL and MariaDB share a client protocol, so a Laravel "mysql" connection
+     * may well be talking to MariaDB and the driver name cannot tell them apart.
+     * The server's own version string decides the slug instead: MariaDB always
+     * names itself in it, MySQL does not. Reporting MariaDB as MySQL would map its
+     * 10.x and 11.x releases onto the wrong support cycles.
      *
      * @return array<string, string>
      */
@@ -98,8 +104,15 @@ final class RuntimeCollector
     {
         try {
             $connection = DB::connection();
+            $driver = $connection->getDriverName();
 
-            if ($connection->getDriverName() !== 'pgsql') {
+            if ($driver === 'mysql' || $driver === 'mariadb') {
+                $row = (array) $connection->selectOne('SELECT VERSION() AS version');
+
+                return self::mysqlFamily($row['version'] ?? null);
+            }
+
+            if ($driver !== 'pgsql') {
                 return [];
             }
 
@@ -111,6 +124,29 @@ final class RuntimeCollector
             // No usable connection: report no engine rather than a 500.
             return [];
         }
+    }
+
+    /**
+     * The mysql or mariadb entry for what VERSION() returned.
+     *
+     * MariaDB can put a "5.5.5-" prefix in front of its real version, for MySQL
+     * clients that do not expect a major version of 10 or higher. That prefix is
+     * dropped when another version number follows it, so a genuine "5.5.5-log"
+     * stays intact. Everything after the number (the MariaDB marker and any
+     * distribution or build suffix) is left out of the payload.
+     *
+     * @return array<string, string>
+     */
+    private static function mysqlFamily(mixed $raw): array
+    {
+        if (! is_string($raw)) {
+            return [];
+        }
+
+        $slug = stripos($raw, 'mariadb') !== false ? 'mariadb' : 'mysql';
+        $version = self::versionNumber(preg_replace('/^5\.5\.5-(?=\d)/', '', $raw));
+
+        return $version === null ? [] : [$slug => $version];
     }
 
     /**
